@@ -3,7 +3,7 @@
  * @Description: mini-koa 核心
  * @LastEditors: krisGooooo
  * @Date: 2019-03-01 21:28:55
- * @LastEditTime: 2019-03-02 13:11:19
+ * @LastEditTime: 2019-03-02 16:10:25
  */
 const http = require('http')
 
@@ -61,6 +61,17 @@ class Application{
     ctx.req = ctx.request.req = req
     ctx.res = ctx.response.res = res
     return ctx
+  }
+  //  compose 实现中间件的洋葱圈模型
+  compose(midds){
+    let len = midds.length
+    return (...args) => {
+      let res = midds[0](...args)
+      for (let i = 1; i < len; i++) {
+        res = midds[i](res)
+      }
+      return res
+    }    
   }
 }
 
