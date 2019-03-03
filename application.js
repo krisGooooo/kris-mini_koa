@@ -3,7 +3,7 @@
  * @Description: mini-koa 核心
  * @LastEditors: krisGooooo
  * @Date: 2019-03-01 21:28:55
- * @LastEditTime: 2019-03-02 16:10:25
+ * @LastEditTime: 2019-03-03 11:03:37
  */
 const http = require('http')
 
@@ -39,16 +39,19 @@ class Application{
     this.context = context
     this.response = response
     this.request = request
+    this.middlewares = []
   }
   //  中间件机制
   use(callback){
+    this.middlewares.push(callback)
     this.callback = callback
   }
   //  监听端口
   listen(...args){
     const server = http.createServer(async (req, res) => {
       let ctx = this.createCtx(req, res)
-      await this.callback(ctx)
+      const fn = this.compose(this.middlewares)
+      await fn(ctx)
       ctx.res.end(ctx.body)
     })
     server.listen(...args)
@@ -63,15 +66,19 @@ class Application{
     return ctx
   }
   //  compose 实现中间件的洋葱圈模型
-  compose(midds){
-    let len = midds.length
-    return (...args) => {
-      let res = midds[0](...args)
-      for (let i = 1; i < len; i++) {
-        res = midds[i](res)
+  compose(middlewares){
+    return function(context){
+      return dispatch(0)
+      function dispatch(i){
+        let fn = middlewares[i]
+        if(!fn){
+          return Promise.resolve()
+        }
+        return Promise.resolve(fn(context, function next(){
+          return dispatch(i+1)
+        }))
       }
-      return res
-    }    
+    }
   }
 }
 
